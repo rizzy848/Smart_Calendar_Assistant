@@ -41,3 +41,6 @@ build/
 credentials.json
 tokens/
 *.json
+users.dat
+
+
