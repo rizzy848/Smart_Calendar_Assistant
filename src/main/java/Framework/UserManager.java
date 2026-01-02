@@ -169,6 +169,10 @@ public class UserManager {
         }
     }
 
+    public User getUserById(String userId) {
+        return users.get(userId);
+    }
+
     private void deleteUserTokenDirectory(String userId) {
         try {
             Path userTokensPath = Paths.get(TOKENS_BASE_DIR, userId);
