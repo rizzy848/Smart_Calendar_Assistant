@@ -1,10 +1,12 @@
 package Framework;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.java6.auth.oauth2.VerificationCodeReceiver;
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
+import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -35,8 +37,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Multi-user Google Calendar API implementation.
- * Each user gets their own OAuth tokens stored separately.
+ * Multi-user Google Calendar API implementation with OAuth URL generation support.
  */
 public class MultiUserGoogleCalendarGateway implements CalendarGateway {
 
@@ -44,59 +45,133 @@ public class MultiUserGoogleCalendarGateway implements CalendarGateway {
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    private static final String REDIRECT_URI = "http://localhost:8888/Callback";
 
     private Calendar service;
     private User currentUser;
     private boolean available = false;
+    private GoogleAuthorizationCodeFlow flow;
+    private NetHttpTransport httpTransport;
 
-    /**
-     * Initialize gateway for a specific user
-     */
     public MultiUserGoogleCalendarGateway(User user) {
         this.currentUser = user;
         try {
-            initialize();
-            available = true;
-            user.setAuthenticated(true);
+            initializeFlow();
+            Credential credential = loadExistingCredential();
+
+            if (credential != null) {
+                // User already authenticated
+                initializeService(credential);
+                available = true;
+                user.setAuthenticated(true);
+                System.out.println("✅ Using existing credentials for " + user.getEmail());
+            } else {
+                // User needs to authenticate
+                System.out.println("⚠️  No credentials found for " + user.getEmail());
+                System.out.println("💡 OAuth URL needs to be generated");
+                available = false;
+            }
         } catch (Exception e) {
-            System.err.println("Failed to initialize Google Calendar for " + user.getEmail() + ": " + e.getMessage());
+            System.err.println("❌ Failed to initialize: " + e.getMessage());
+            e.printStackTrace();
             available = false;
         }
     }
 
-    private void initialize() throws IOException, GeneralSecurityException {
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        service = new Calendar.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(APPLICATION_NAME)
-                .build();
-    }
+    private void initializeFlow() throws IOException, GeneralSecurityException {
+        this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
-    private Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
         InputStream in = MultiUserGoogleCalendarGateway.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
         GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
 
-        // Use user-specific tokens directory
         String tokensDir = currentUser.getTokensDirectory();
 
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+        this.flow = new GoogleAuthorizationCodeFlow.Builder(
+                httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(tokensDir)))
                 .setAccessType("offline")
+                .setApprovalPrompt("force")
                 .build();
+    }
 
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+    private Credential loadExistingCredential() throws IOException {
+        Credential credential = flow.loadCredential(currentUser.getUserId());
 
-        System.out.println("🔐 Authenticating user: " + currentUser.getEmail());
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize(currentUser.getUserId());
+        if (credential != null && credential.getRefreshToken() != null) {
+            // Refresh if needed
+            if (credential.getExpiresInSeconds() != null && credential.getExpiresInSeconds() <= 60) {
+                System.out.println("🔄 Refreshing access token...");
+                credential.refreshToken();
+            }
+            return credential;
+        }
+
+        return null;
+    }
+
+    private void initializeService(Credential credential) throws IOException, GeneralSecurityException {
+        service = new Calendar.Builder(httpTransport, JSON_FACTORY, credential)
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+    }
+
+    /**
+     * Generate OAuth authorization URL for frontend to open
+     */
+    public String getAuthorizationUrl() {
+        try {
+            if (flow == null) {
+                initializeFlow();
+            }
+
+            String authUrl = flow.newAuthorizationUrl()
+                    .setRedirectUri(REDIRECT_URI)
+                    .build();
+
+            System.out.println("🔗 Generated OAuth URL: " + authUrl.substring(0, Math.min(100, authUrl.length())) + "...");
+            return authUrl;
+
+        } catch (Exception e) {
+            System.err.println("❌ Failed to generate OAuth URL: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
+     * Complete OAuth flow with authorization code from frontend
+     */
+    public boolean completeAuthorization(String authorizationCode) {
+        try {
+            System.out.println("🔐 Completing OAuth with code: " + authorizationCode.substring(0, Math.min(20, authorizationCode.length())) + "...");
+
+            GoogleTokenResponse response = flow.newTokenRequest(authorizationCode)
+                    .setRedirectUri(REDIRECT_URI)
+                    .execute();
+
+            Credential credential = flow.createAndStoreCredential(response, currentUser.getUserId());
+
+            initializeService(credential);
+            available = true;
+            currentUser.setAuthenticated(true);
+
+            System.out.println("✅ OAuth completed successfully for " + currentUser.getEmail());
+            return true;
+
+        } catch (Exception e) {
+            System.err.println("❌ Failed to complete OAuth: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
 
     @Override
     public entity.Event createEvent(entity.Event event) throws CalendarException {
         if (!available) {
-            throw new CalendarException("Calendar service not available", "SERVICE_UNAVAILABLE");
+            throw new CalendarException("Calendar service not available - authentication required", "AUTH_REQUIRED");
         }
 
         try {
@@ -118,12 +193,13 @@ public class MultiUserGoogleCalendarGateway implements CalendarGateway {
                     .setTimeZone(ZoneId.systemDefault().getId());
             googleEvent.setEnd(end);
 
-            // Use user's calendar ID (usually "primary")
             Event createdEvent = service.events().insert(currentUser.getCalendarId(), googleEvent).execute();
 
+            System.out.println("✅ Event created: " + createdEvent.getHtmlLink());
             return convertToEvent(createdEvent);
 
         } catch (IOException e) {
+            System.err.println("❌ Failed to create event: " + e.getMessage());
             throw new CalendarException("Failed to create event: " + e.getMessage(), "API_ERROR", e);
         }
     }
