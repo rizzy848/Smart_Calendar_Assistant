@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {"http://localhost:3000", "https://smart-calendar-frontend.onrender.com"})
 public class EventController {
 
     private final AIEventParser aiParser;

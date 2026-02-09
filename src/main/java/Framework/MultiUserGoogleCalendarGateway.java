@@ -44,7 +44,9 @@ public class MultiUserGoogleCalendarGateway implements CalendarGateway {
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
     // FIXED: Changed to Spring Boot endpoint instead of port 8888
-    private static final String REDIRECT_URI = "http://localhost:8080/api/events/auth/callback";
+    private static final String REDIRECT_URI = System.getenv("OAUTH_REDIRECT_URI") != null
+            ? System.getenv("OAUTH_REDIRECT_URI")
+            : "http://localhost:8080/api/events/auth/callback";
 
     private Calendar service;
     private User currentUser;

@@ -1,0 +1,23 @@
+services:
+  # Backend Service
+  - type: web
+    name: smart-calendar-backend
+    env: java
+    buildCommand: mvn clean install -DskipTests
+    startCommand: java -jar target/TimeManagingJarvis-1.0-SNAPSHOT.jar
+    envVars:
+      - key: JAVA_VERSION
+        value: 24
+      - key: PORT
+        value: 8080
+
+  # Frontend Service
+  - type: web
+    name: smart-calendar-frontend
+    env: static
+    buildCommand: cd calendar-frontend && npm install && npm run build
+    staticPublishPath: calendar-frontend/build
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
