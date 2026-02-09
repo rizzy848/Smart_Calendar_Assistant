@@ -216,6 +216,166 @@ public class EventController {
     }
 
     /**
+     * NEW: OAuth callback endpoint to handle Google's redirect
+     * This is where Google sends users after they authenticate
+     */
+    @GetMapping("/auth/callback")
+    public ResponseEntity<String> handleOAuthCallback(
+            @RequestParam("code") String authCode,
+            @RequestParam(value = "state", required = false) String state) {
+
+        System.out.println("\n╔════════════════════════════════════════════════╗");
+        System.out.println("║         OAUTH CALLBACK RECEIVED                ║");
+        System.out.println("╠════════════════════════════════════════════════╣");
+        System.out.println("  Auth Code: " + authCode.substring(0, Math.min(20, authCode.length())) + "...");
+
+        try {
+            // Find the gateway waiting for this auth code
+            // In a production app, you'd use the 'state' parameter to identify the user
+            for (Map.Entry<String, MultiUserGoogleCalendarGateway> entry : userGateways.entrySet()) {
+                MultiUserGoogleCalendarGateway gateway = entry.getValue();
+
+                if (!gateway.isAvailable()) {
+                    // This gateway is waiting for auth
+                    boolean success = gateway.completeAuthorization(authCode);
+
+                    if (success) {
+                        System.out.println("✅ Authentication successful!");
+                        System.out.println("╚════════════════════════════════════════════════╝");
+
+                        // Return HTML that closes the popup and notifies parent window
+                        String html = """
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <title>Authentication Successful</title>
+                                <style>
+                                    body {
+                                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                                        display: flex;
+                                        justify-content: center;
+                                        align-items: center;
+                                        height: 100vh;
+                                        margin: 0;
+                                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    }
+                                    .container {
+                                        background: white;
+                                        padding: 40px;
+                                        border-radius: 20px;
+                                        box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                                        text-align: center;
+                                        max-width: 400px;
+                                    }
+                                    h1 {
+                                        color: #28a745;
+                                        margin-bottom: 20px;
+                                    }
+                                    p {
+                                        color: #666;
+                                        margin-bottom: 20px;
+                                    }
+                                    .checkmark {
+                                        font-size: 64px;
+                                        color: #28a745;
+                                        margin-bottom: 20px;
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="checkmark">✓</div>
+                                    <h1>Authentication Successful!</h1>
+                                    <p>You can now close this window and return to the application.</p>
+                                    <p style="font-size: 12px; color: #999;">This window will close automatically in 3 seconds...</p>
+                                </div>
+                                <script>
+                                    // Notify parent window and close popup
+                                    if (window.opener) {
+                                        window.opener.postMessage({ type: 'oauth-success' }, 'http://localhost:3000');
+                                    }
+                                    setTimeout(() => window.close(), 3000);
+                                </script>
+                            </body>
+                            </html>
+                            """;
+
+                        return ResponseEntity.ok()
+                                .header(HttpHeaders.CONTENT_TYPE, "text/html; charset=UTF-8")
+                                .body(html);
+                    }
+                }
+            }
+
+            System.out.println("❌ No waiting gateway found");
+            System.out.println("╚════════════════════════════════════════════════╝");
+
+            String errorHtml = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Authentication Error</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            height: 100vh;
+                            margin: 0;
+                            background: #f5f5f5;
+                        }
+                        .container {
+                            background: white;
+                            padding: 40px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            text-align: center;
+                        }
+                        h1 { color: #d32f2f; }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>❌ Authentication Error</h1>
+                        <p>No matching session found. Please try again from the application.</p>
+                        <button onclick="window.close()">Close Window</button>
+                    </div>
+                </body>
+                </html>
+                """;
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .header(HttpHeaders.CONTENT_TYPE, "text/html; charset=UTF-8")
+                    .body(errorHtml);
+
+        } catch (Exception e) {
+            System.err.println("❌ Error processing callback: " + e.getMessage());
+            e.printStackTrace();
+            System.out.println("╚════════════════════════════════════════════════╝");
+
+            String errorHtml = """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Authentication Error</title>
+                </head>
+                <body>
+                    <h1>Authentication Error</h1>
+                    <p>""" + e.getMessage() + """
+                    </p>
+                    <button onclick="window.close()">Close Window</button>
+                </body>
+                </html>
+                """;
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .header(HttpHeaders.CONTENT_TYPE, "text/html; charset=UTF-8")
+                    .body(errorHtml);
+        }
+    }
+
+    /**
      * Create a calendar event
      */
     @PostMapping(value = "/create",

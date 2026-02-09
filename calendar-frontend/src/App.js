@@ -348,334 +348,382 @@ function App() {
 
     return (
         <div className="App">
-            {!isLoggedIn ? <LoginScreen /> : <CalendarInterface />}
+            {!isLoggedIn ? (
+                <LoginScreen
+                    backendStatus={backendStatus}
+                    checkBackendConnection={checkBackendConnection}
+                    setIsLoggedIn={setIsLoggedIn}
+                    setCurrentUser={setCurrentUser}
+                    setMessage={setMessage}
+                    setAuthStatus={setAuthStatus}
+                    setUserId={setUserId}
+                />
+            ) : (
+                <CalendarInterface
+                    currentUser={currentUser}
+                    authStatus={authStatus}
+                    handleLogout={handleLogout}
+                    message={message}
+                    loading={loading}
+                    userInput={userInput}
+                    setUserInput={setUserInput}
+                    handleParse={handleParse}
+                    inputRef={inputRef}
+                    showConfirmation={showConfirmation}
+                    parsedEvent={parsedEvent}
+                    handleCreateEvent={handleCreateEvent}
+                    handleCancel={handleCancel}
+                />
+            )}
         </div>
     );
+}
 
-    // Login Screen Component
-    function LoginScreen() {
-        const [username, setUsername] = useState('');
-        const [email, setEmail] = useState('');
-        const [loggingIn, setLoggingIn] = useState(false);
-        const [loginError, setLoginError] = useState('');
+// Login Screen Component - MOVED OUTSIDE App to prevent re-rendering
+function LoginScreen({
+                         backendStatus,
+                         checkBackendConnection,
+                         setIsLoggedIn,
+                         setCurrentUser,
+                         setMessage,
+                         setAuthStatus,
+                         setUserId
+                     }) {
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [loggingIn, setLoggingIn] = useState(false);
+    const [loginError, setLoginError] = useState('');
 
-        const handleLogin = async (e) => {
-            if (e) e.preventDefault();
+    const handleLogin = async (e) => {
+        if (e) e.preventDefault();
 
-            if (!email || !username) {
-                setLoginError('Please enter both name and email');
-                return;
-            }
+        if (!email || !username) {
+            setLoginError('Please enter both name and email');
+            return;
+        }
 
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                setLoginError('Please enter a valid email address');
-                return;
-            }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setLoginError('Please enter a valid email address');
+            return;
+        }
 
-            if (!backendStatus.connected) {
-                setLoginError('Backend server is not running. Please start it with: mvn spring-boot:run');
-                return;
-            }
+        if (!backendStatus.connected) {
+            setLoginError('Backend server is not running. Please start it with: mvn spring-boot:run');
+            return;
+        }
 
-            setLoggingIn(true);
-            setLoginError('');
+        setLoggingIn(true);
+        setLoginError('');
 
-            try {
-                console.log('📝 Registering user:', { username, email });
-                const userData = await registerUser(username, email);
+        try {
+            console.log('📝 Registering user:', { username, email });
+            const userData = await registerUser(username, email);
 
-                setUserId(userData.userId);
-                setCurrentUser({
-                    userId: userData.userId,
-                    username: userData.username || username,
-                    email: userData.email || email
-                });
-                setIsLoggedIn(true);
-                setMessage({
-                    type: 'success',
-                    text: `Welcome, ${username}! 🎉`,
-                    persistent: false
-                });
+            setUserId(userData.userId);
+            setCurrentUser({
+                userId: userData.userId,
+                username: userData.username || username,
+                email: userData.email || email
+            });
+            setIsLoggedIn(true);
+            setMessage({
+                type: 'success',
+                text: `Welcome, ${username}! 🎉`,
+                persistent: false
+            });
 
-            } catch (error) {
-                console.error('❌ Login failed:', error);
-                setLoginError(error.message || 'Failed to connect. Please check if backend is running.');
-            } finally {
-                setLoggingIn(false);
-            }
-        };
+        } catch (error) {
+            console.error('❌ Login failed:', error);
+            setLoginError(error.message || 'Failed to connect. Please check if backend is running.');
+        } finally {
+            setLoggingIn(false);
+        }
+    };
 
-        return (
-            <div className="login-container">
-                <div className="login-card">
-                    <div className="login-header">
-                        <Calendar size={48} className="logo-icon" />
-                        <h1>AI Smart Calendar</h1>
-                        <p>Natural language calendar assistant powered by Google Gemini AI</p>
-                    </div>
+    return (
+        <div className="login-container">
+            <div className="login-card">
+                <div className="login-header">
+                    <Calendar size={48} className="logo-icon" />
+                    <h1>AI Smart Calendar</h1>
+                    <p>Natural language calendar assistant powered by Google Gemini AI</p>
+                </div>
 
-                    {/* Backend Status */}
-                    <div style={{
-                        padding: '12px',
-                        borderRadius: '8px',
-                        marginBottom: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        background: backendStatus.checking ? '#f0f0f0' :
-                            backendStatus.connected ? '#d4edda' : '#f8d7da',
-                        color: backendStatus.checking ? '#666' :
-                            backendStatus.connected ? '#155724' : '#721c24',
-                        border: `1px solid ${backendStatus.checking ? '#ddd' :
-                            backendStatus.connected ? '#c3e6cb' : '#f5c6cb'}`
-                    }}>
-                        {backendStatus.checking ? (
-                            <>
-                                <Loader size={20} className="spinner" />
-                                <span>Checking connection...</span>
-                            </>
-                        ) : backendStatus.connected ? (
-                            <>
-                                <Wifi size={20} />
-                                <span>✓ Server Connected</span>
-                            </>
-                        ) : (
-                            <>
-                                <WifiOff size={20} />
-                                <div style={{flex: 1}}>
-                                    <div><strong>Server Offline</strong></div>
-                                    <div style={{fontSize: '12px', marginTop: '4px'}}>
-                                        Run: <code>mvn spring-boot:run</code>
-                                    </div>
+                {/* Backend Status */}
+                <div style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    marginBottom: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: backendStatus.checking ? '#f0f0f0' :
+                        backendStatus.connected ? '#d4edda' : '#f8d7da',
+                    color: backendStatus.checking ? '#666' :
+                        backendStatus.connected ? '#155724' : '#721c24',
+                    border: `1px solid ${backendStatus.checking ? '#ddd' :
+                        backendStatus.connected ? '#c3e6cb' : '#f5c6cb'}`
+                }}>
+                    {backendStatus.checking ? (
+                        <>
+                            <Loader size={20} className="spinner" />
+                            <span>Checking connection...</span>
+                        </>
+                    ) : backendStatus.connected ? (
+                        <>
+                            <Wifi size={20} />
+                            <span>✓ Server Connected</span>
+                        </>
+                    ) : (
+                        <>
+                            <WifiOff size={20} />
+                            <div style={{flex: 1}}>
+                                <div><strong>Server Offline</strong></div>
+                                <div style={{fontSize: '12px', marginTop: '4px'}}>
+                                    Run: <code>mvn spring-boot:run</code>
                                 </div>
-                                <button
-                                    onClick={checkBackendConnection}
-                                    className="btn-retry"
-                                >
-                                    Retry
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    {loginError && (
-                        <div className="message message-error" style={{marginBottom: '20px'}}>
-                            <AlertCircle size={20} />
-                            <span>{loginError}</span>
-                        </div>
+                            </div>
+                            <button
+                                onClick={checkBackendConnection}
+                                className="btn-retry"
+                            >
+                                Retry
+                            </button>
+                        </>
                     )}
+                </div>
 
-                    <form className="login-form" onSubmit={handleLogin}>
-                        <input
-                            type="text"
-                            placeholder="Your Name"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="input-field"
-                            disabled={loggingIn || !backendStatus.connected}
-                            autoFocus
-                        />
-                        <input
-                            type="email"
-                            placeholder="Google Email (for calendar access)"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="input-field"
-                            disabled={loggingIn || !backendStatus.connected}
-                        />
-                        <button
-                            type="submit"
-                            disabled={!username || !email || loggingIn || !backendStatus.connected}
-                            className="btn-primary"
-                        >
-                            {loggingIn ? (
-                                <>
-                                    <Loader size={16} className="spinner" style={{marginRight: '8px'}} />
-                                    Connecting...
-                                </>
-                            ) : 'Get Started'}
-                        </button>
-                    </form>
-
-                    <div style={{marginTop: '20px', padding: '12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '14px', color: '#666'}}>
-                        <Info size={16} style={{display: 'inline', marginRight: '6px'}} />
-                        You'll need to authenticate with Google Calendar on first use
+                {loginError && (
+                    <div className="message message-error" style={{marginBottom: '20px'}}>
+                        <AlertCircle size={20} />
+                        <span>{loginError}</span>
                     </div>
+                )}
+
+                <form className="login-form" onSubmit={handleLogin}>
+                    <input
+                        type="text"
+                        placeholder="Your Name"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="input-field"
+                        disabled={loggingIn || !backendStatus.connected}
+                        autoFocus
+                    />
+                    <input
+                        type="email"
+                        placeholder="Google Email (for calendar access)"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="input-field"
+                        disabled={loggingIn || !backendStatus.connected}
+                    />
+                    <button
+                        type="submit"
+                        disabled={!username || !email || loggingIn || !backendStatus.connected}
+                        className="btn-primary"
+                    >
+                        {loggingIn ? (
+                            <>
+                                <Loader size={16} className="spinner" style={{marginRight: '8px'}} />
+                                Connecting...
+                            </>
+                        ) : 'Get Started'}
+                    </button>
+                </form>
+
+                <div style={{marginTop: '20px', padding: '12px', background: '#f8f9fa', borderRadius: '8px', fontSize: '14px', color: '#666'}}>
+                    <Info size={16} style={{display: 'inline', marginRight: '6px'}} />
+                    You'll need to authenticate with Google Calendar on first use
                 </div>
             </div>
-        );
-    }
+        </div>
+    );
+}
 
-    // Calendar Interface Component
-    function CalendarInterface() {
-        return (
-            <div className="app-container">
-                <header className="app-header">
-                    <div className="header-content">
-                        <div className="header-left">
-                            <Calendar size={32} className="header-icon" />
-                            <h1>AI Calendar Assistant</h1>
+// Calendar Interface Component - MOVED OUTSIDE App to prevent re-rendering
+function CalendarInterface({
+                               currentUser,
+                               authStatus,
+                               handleLogout,
+                               message,
+                               loading,
+                               userInput,
+                               setUserInput,
+                               handleParse,
+                               inputRef,
+                               showConfirmation,
+                               parsedEvent,
+                               handleCreateEvent,
+                               handleCancel
+                           }) {
+    return (
+        <div className="app-container">
+            <header className="app-header">
+                <div className="header-content">
+                    <div className="header-left">
+                        <Calendar size={32} className="header-icon" />
+                        <h1>AI Calendar Assistant</h1>
+                    </div>
+                    <div className="header-right">
+                        <div className="user-info">
+                            <User size={20} />
+                            <span>{currentUser?.username}</span>
                         </div>
-                        <div className="header-right">
-                            <div className="user-info">
-                                <User size={20} />
-                                <span>{currentUser?.username}</span>
+                        {authStatus.checking ? (
+                            <div className="auth-status checking">
+                                <Loader size={16} className="spinner" />
                             </div>
-                            {authStatus.checking ? (
-                                <div className="auth-status checking">
-                                    <Loader size={16} className="spinner" />
-                                </div>
-                            ) : authStatus.authenticated ? (
-                                <div className="auth-status authenticated" title="Connected to Google Calendar">
-                                    <CheckCircle size={16} />
-                                </div>
-                            ) : (
-                                <div className="auth-status not-authenticated" title="Not connected to Google Calendar">
-                                    <AlertCircle size={16} />
+                        ) : authStatus.authenticated ? (
+                            <div className="auth-status authenticated" title="Connected to Google Calendar">
+                                <CheckCircle size={16} />
+                            </div>
+                        ) : (
+                            <div className="auth-status not-authenticated" title="Not connected to Google Calendar">
+                                <AlertCircle size={16} />
+                            </div>
+                        )}
+                        <button onClick={handleLogout} className="btn-icon" title="Logout">
+                            <LogOut size={20} />
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main className="main-content">
+                {message && (
+                    <div className={`message message-${message.type}`}>
+                        {message.type === 'success' ?
+                            loading ? <Clock size={20} className="spinner" /> : <CheckCircle size={20} /> :
+                            <AlertCircle size={20} />
+                        }
+                        <span>{message.text}</span>
+                    </div>
+                )}
+
+                <div className="input-section">
+                    <h2>What would you like to schedule?</h2>
+                    <div className="examples">
+                        <p>💡 Try saying:</p>
+                        <ul>
+                            <li>"Meeting with John tomorrow at 2 PM"</li>
+                            <li>"Dentist appointment next Monday at 10:30 AM"</li>
+                            <li>"Workout session today at 6 PM for 1 hour"</li>
+                            <li>"Team standup next Friday at 9 AM at Office"</li>
+                        </ul>
+                    </div>
+
+                    <form onSubmit={handleParse}>
+                        <div className="input-container">
+                            <MessageSquare className="input-icon" size={20} />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                placeholder="Type your event here... (e.g., 'Lunch with Sarah tomorrow at noon')"
+                                className="main-input"
+                                disabled={loading}
+                                autoComplete="off"
+                            />
+                            <button
+                                type="submit"
+                                disabled={loading || !userInput.trim()}
+                                className="btn-primary"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader size={16} className="spinner" />
+                                    </>
+                                ) : 'Parse'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {showConfirmation && parsedEvent && (
+                    <div className="confirmation-section">
+                        <h3>
+                            <CheckCircle size={20} />
+                            Review Event Details
+                        </h3>
+                        <div className="event-details">
+                            <div className="detail-row">
+                                <span className="label">Event Title:</span>
+                                <span className="value">{parsedEvent.title}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="label">Date:</span>
+                                <span className="value">{new Date(parsedEvent.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                            <div className="detail-row">
+                                <span className="label">Start Time:</span>
+                                <span className="value">{parsedEvent.startTime}</span>
+                            </div>
+                            {parsedEvent.endTime && (
+                                <div className="detail-row">
+                                    <span className="label">End Time:</span>
+                                    <span className="value">{parsedEvent.endTime}</span>
                                 </div>
                             )}
-                            <button onClick={handleLogout} className="btn-icon" title="Logout">
-                                <LogOut size={20} />
+                            {parsedEvent.location && (
+                                <div className="detail-row">
+                                    <span className="label">Location:</span>
+                                    <span className="value">{parsedEvent.location}</span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="confirmation-buttons">
+                            <button
+                                onClick={handleCreateEvent}
+                                disabled={loading}
+                                className="btn-success"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader size={16} className="spinner" style={{marginRight: '8px'}} />
+                                        Processing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <CheckCircle size={16} style={{marginRight: '8px'}} />
+                                        Create Event
+                                    </>
+                                )}
+                            </button>
+                            <button
+                                onClick={handleCancel}
+                                disabled={loading}
+                                className="btn-secondary"
+                            >
+                                Cancel
                             </button>
                         </div>
                     </div>
-                </header>
+                )}
 
-                <main className="main-content">
-                    {message && (
-                        <div className={`message message-${message.type}`}>
-                            {message.type === 'success' ?
-                                loading ? <Clock size={20} className="spinner" /> : <CheckCircle size={20} /> :
-                                <AlertCircle size={20} />
-                            }
-                            <span>{message.text}</span>
+                <div className="features-section">
+                    <h3>Coming Soon</h3>
+                    <div className="feature-cards">
+                        <div className="feature-card disabled">
+                            <h4>📋 View Schedule</h4>
+                            <p>See all your upcoming events</p>
                         </div>
-                    )}
-
-                    <div className="input-section">
-                        <h2>What would you like to schedule?</h2>
-                        <div className="examples">
-                            <p>💡 Try saying:</p>
-                            <ul>
-                                <li>"Meeting with John tomorrow at 2 PM"</li>
-                                <li>"Dentist appointment next Monday at 10:30 AM"</li>
-                                <li>"Workout session today at 6 PM for 1 hour"</li>
-                                <li>"Team standup next Friday at 9 AM at Office"</li>
-                            </ul>
+                        <div className="feature-card disabled">
+                            <h4>🗑️ Delete Events</h4>
+                            <p>Remove events easily</p>
                         </div>
-
-                        <form onSubmit={handleParse}>
-                            <div className="input-container">
-                                <MessageSquare className="input-icon" size={20} />
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={userInput}
-                                    onChange={(e) => setUserInput(e.target.value)}
-                                    placeholder="Type your event here... (e.g., 'Lunch with Sarah tomorrow at noon')"
-                                    className="main-input"
-                                    disabled={loading}
-                                    autoComplete="off"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={loading || !userInput.trim()}
-                                    className="btn-primary"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader size={16} className="spinner" />
-                                        </>
-                                    ) : 'Parse'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    {showConfirmation && parsedEvent && (
-                        <div className="confirmation-section">
-                            <h3>
-                                <CheckCircle size={20} />
-                                Review Event Details
-                            </h3>
-                            <div className="event-details">
-                                <div className="detail-row">
-                                    <span className="label">Event Title:</span>
-                                    <span className="value">{parsedEvent.title}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Date:</span>
-                                    <span className="value">{new Date(parsedEvent.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                </div>
-                                <div className="detail-row">
-                                    <span className="label">Start Time:</span>
-                                    <span className="value">{parsedEvent.startTime}</span>
-                                </div>
-                                {parsedEvent.endTime && (
-                                    <div className="detail-row">
-                                        <span className="label">End Time:</span>
-                                        <span className="value">{parsedEvent.endTime}</span>
-                                    </div>
-                                )}
-                                {parsedEvent.location && (
-                                    <div className="detail-row">
-                                        <span className="label">Location:</span>
-                                        <span className="value">{parsedEvent.location}</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="confirmation-buttons">
-                                <button
-                                    onClick={handleCreateEvent}
-                                    disabled={loading}
-                                    className="btn-success"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader size={16} className="spinner" style={{marginRight: '8px'}} />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle size={16} style={{marginRight: '8px'}} />
-                                            Create Event
-                                        </>
-                                    )}
-                                </button>
-                                <button
-                                    onClick={handleCancel}
-                                    disabled={loading}
-                                    className="btn-secondary"
-                                >
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="features-section">
-                        <h3>Coming Soon</h3>
-                        <div className="feature-cards">
-                            <div className="feature-card disabled">
-                                <h4>📋 View Schedule</h4>
-                                <p>See all your upcoming events</p>
-                            </div>
-                            <div className="feature-card disabled">
-                                <h4>🗑️ Delete Events</h4>
-                                <p>Remove events easily</p>
-                            </div>
-                            <div className="feature-card disabled">
-                                <h4>✏️ Update Events</h4>
-                                <p>Modify existing events</p>
-                            </div>
+                        <div className="feature-card disabled">
+                            <h4>✏️ Update Events</h4>
+                            <p>Modify existing events</p>
                         </div>
                     </div>
-                </main>
-            </div>
-        );
-    }
+                </div>
+            </main>
+        </div>
+    );
 }
 
 export default App;

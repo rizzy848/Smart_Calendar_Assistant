@@ -1,11 +1,8 @@
 package Framework;
 
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.VerificationCodeReceiver;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeTokenRequest;
 import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -38,6 +35,7 @@ import java.util.stream.Collectors;
 
 /**
  * Multi-user Google Calendar API implementation with OAuth URL generation support.
+ * Fixed for web application OAuth flow.
  */
 public class MultiUserGoogleCalendarGateway implements CalendarGateway {
 
@@ -45,7 +43,8 @@ public class MultiUserGoogleCalendarGateway implements CalendarGateway {
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final List<String> SCOPES = Collections.singletonList(CalendarScopes.CALENDAR);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
-    private static final String REDIRECT_URI = "http://localhost:8888/Callback";
+    // FIXED: Changed to Spring Boot endpoint instead of port 8888
+    private static final String REDIRECT_URI = "http://localhost:8080/api/events/auth/callback";
 
     private Calendar service;
     private User currentUser;
