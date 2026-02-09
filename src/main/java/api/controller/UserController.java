@@ -3,6 +3,7 @@ package api.controller;
 import api.dto.UserDTO;
 import Framework.UserManager;
 import entity.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +17,10 @@ public class UserController {
 
     private final UserManager userManager;
 
-    public UserController() {
-        this.userManager = new UserManager();
-        System.out.println("✅ UserController initialized");
+    @Autowired
+    public UserController(UserManager userManager) {
+        this.userManager = userManager;
+        System.out.println("✅ UserController initialized with shared UserManager");
     }
 
     @PostMapping(value = "/register",
