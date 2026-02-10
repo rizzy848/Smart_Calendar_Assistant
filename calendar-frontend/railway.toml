@@ -1,5 +1,3 @@
-# Railway deployment configuration for React frontend
-
 [build]
 builder = "NIXPACKS"
 
