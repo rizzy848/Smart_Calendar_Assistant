@@ -40,7 +40,9 @@ build/
 # Secrets
 credentials.json
 tokens/
-*.json
+credentials.json
+tokens/**/*.json
+src/main/resources/config/Gemini.properties
 users.dat
 
 
