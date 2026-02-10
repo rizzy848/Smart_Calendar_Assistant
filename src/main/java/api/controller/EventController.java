@@ -22,9 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api/events")
 @CrossOrigin(origins = {
         "http://localhost:3000",
-        "https://*.railway.app",
-        "https://*.up.railway.app",
-        "https://YOUR-FRONTEND-URL.up.railway.app"  // Add your actual frontend URL
+        "https://smartcalendarassistant-production.up.railway.app/"  // Add actual URL here
 })
 public class EventController {
 

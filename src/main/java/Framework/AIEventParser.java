@@ -36,12 +36,17 @@ public class AIEventParser {
     }
 
     private void initializeGemini() throws IOException {
-        Properties props = new Properties();
-        props.load(new FileInputStream(CONFIG_PATH));
+        // Try environment variable first
+        String apiKey = System.getenv("GEMINI_API_KEY");
 
-        String apiKey = props.getProperty("gemini.api.key");
-        this.modelName = props.getProperty("gemini.model", "gemini-1.5-flash");
+        if (apiKey == null || apiKey.isEmpty()) {
+            // Fall back to properties file (local dev)
+            Properties props = new Properties();
+            props.load(new FileInputStream(CONFIG_PATH));
+            apiKey = props.getProperty("gemini.api.key");
+        }
 
+        this.modelName = "gemini-2.5-flash";
         this.geminiClient = new Client.Builder()
                 .apiKey(apiKey)
                 .build();

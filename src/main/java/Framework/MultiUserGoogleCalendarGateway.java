@@ -82,7 +82,7 @@ public class MultiUserGoogleCalendarGateway implements CalendarGateway {
     private void initializeFlow() throws IOException, GeneralSecurityException {
         this.httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
-        InputStream in = MultiUserGoogleCalendarGateway.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        InputStream in = CredentialsLoader.getCredentialsStream();
         if (in == null) {
             throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
         }
