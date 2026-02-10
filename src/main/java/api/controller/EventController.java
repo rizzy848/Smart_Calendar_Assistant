@@ -23,7 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @CrossOrigin(origins = {
         "http://localhost:3000",
         "https://*.railway.app",
-        "https://*.up.railway.app"
+        "https://*.up.railway.app",
+        "https://YOUR-FRONTEND-URL.up.railway.app"  // Add your actual frontend URL
 })
 public class EventController {
 

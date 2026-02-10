@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_BASE_URL = process.env.REACT_APP_API_URL ||
     (window.location.hostname === 'localhost'
         ? 'http://localhost:8080/api'
-        : 'https://your-backend.up.railway.app/api');
+        : 'https://smartcalendarassistant-production.up.railway.app/');  // ← Change this!
 
 // Store user ID in memory
 let currentUserId = null;
