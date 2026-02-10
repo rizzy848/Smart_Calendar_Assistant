@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:8080/api'
-    : 'https://smart-calendar-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL ||
+    (window.location.hostname === 'localhost'
+        ? 'http://localhost:8080/api'
+        : 'https://your-backend.up.railway.app/api');
 
 // Store user ID in memory
 let currentUserId = null;

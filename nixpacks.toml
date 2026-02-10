@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["...", "jdk24"]
+
+[phases.build]
+cmds = ["mvn clean install -DskipTests"]
+
+[start]
+cmd = "java -jar target/TimeManagingJarvis-1.0-SNAPSHOT.jar"
