@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: smart-calendar-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/events/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_CREDENTIALS_BASE64
+        sync: false
+      - key: OAUTH_REDIRECT_URI
+        sync: false
