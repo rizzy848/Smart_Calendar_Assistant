@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Calendar, User, LogOut, MessageSquare, CheckCircle, AlertCircle, Wifi, WifiOff, Clock, Loader, Info } from 'lucide-react';
-import { parseNaturalLanguage, createEvent, setUserId, registerUser, testConnection } from './services/api';
+import { parseNaturalLanguage, createEvent, setUserId, registerUser, testConnection, API_BASE_URL } from './services/api';
 import './App.css';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
         setAuthStatus({ checking: true, authenticated: false });
 
         try {
-            const response = await fetch(`http://localhost:8080/api/events/auth/check/${currentUser.userId}`);
+            const response = await fetch(`${API_BASE_URL}/events/auth/check/${currentUser.userId}`);
             const data = await response.json();
 
             setAuthStatus({
@@ -152,7 +152,7 @@ function App() {
 
         try {
             // Check if user needs OAuth
-            const authCheck = await fetch(`http://localhost:8080/api/events/auth/check/${currentUser.userId}`);
+            const authCheck = await fetch(`${API_BASE_URL}/events/auth/check/${currentUser.userId}`);
             const authData = await authCheck.json();
 
             if (authData.needsAuth) {
@@ -164,7 +164,7 @@ function App() {
                 });
 
                 // Get OAuth URL
-                const urlResponse = await fetch(`http://localhost:8080/api/events/auth/url/${currentUser.userId}`);
+                const urlResponse = await fetch(`${API_BASE_URL}/events/auth/url/${currentUser.userId}`);
                 const urlData = await urlResponse.json();
 
                 if (urlData.authUrl) {

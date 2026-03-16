@@ -20,10 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = {
-        "http://localhost:3000",
-        "https://smartcalendarassistant-production.up.railway.app/"  // Add actual URL here
-})
+@CrossOrigin(origins = "*")
 public class EventController {
 
     private final AIEventParser aiParser;
@@ -295,7 +292,7 @@ public class EventController {
                                 <script>
                                     // Notify parent window and close popup
                                     if (window.opener) {
-                                        window.opener.postMessage({ type: 'oauth-success' }, 'http://localhost:3000');
+                                        window.opener.postMessage({ type: 'oauth-success' }, '*');
                                     }
                                     setTimeout(() => window.close(), 3000);
                                 </script>

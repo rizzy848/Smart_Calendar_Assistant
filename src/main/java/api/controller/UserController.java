@@ -12,10 +12,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {
-        "http://localhost:3000",
-        "https://smartcalendarassistant-production.up.railway.app/"  // Add actual URL here
-})
+@CrossOrigin(origins = "*")
 public class UserController {
 
     private final UserManager userManager;

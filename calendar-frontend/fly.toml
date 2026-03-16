@@ -1,0 +1,50 @@
+# Fly.io configuration for Smart Calendar Frontend
+app = "smart-calendar-frontend"
+primary_region = "iad"  # Change to match backend region
+
+[build]
+dockerfile = "Dockerfile.frontend"
+
+[build.args]
+REACT_APP_API_URL = "https://smart-calendar-backend.fly.dev/api"
+
+[env]
+PORT = "8080"
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+
+[http_service.concurrency]
+type = "requests"
+hard_limit = 50
+soft_limit = 40
+
+[[services]]
+protocol = "tcp"
+internal_port = 8080
+
+[[services.ports]]
+port = 80
+handlers = ["http"]
+force_https = true
+
+[[services.ports]]
+port = 443
+handlers = ["tls", "http"]
+
+[services.concurrency]
+type = "connections"
+hard_limit = 50
+soft_limit = 40
+
+[[services.http_checks]]
+interval = 30000
+timeout = 2000
+grace_period = "5s"
+method = "get"
+path = "/health"
+protocol = "http"
