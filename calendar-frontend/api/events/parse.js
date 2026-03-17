@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
 
 function extractField(response, fieldName) {
-    const match = response.match(new RegExp(`${fieldName}:\\s*(.+)$`, 'm'));
+    const match = response.match(new RegExp(`${fieldName}:\\s*([^\\n\\r]*)`, 'm'));
     if (!match) return null;
     const val = match[1].trim();
     return val === '' || val.toLowerCase() === 'empty' ? null : val;
