@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ successful: false, errorMessage: 'Please provide an event description' });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
         return res.status(500).json({ successful: false, errorMessage: 'AI service not configured' });
     }
 
