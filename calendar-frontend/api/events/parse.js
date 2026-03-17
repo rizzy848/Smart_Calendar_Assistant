@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const OpenAI = require('openai');
 
 function extractField(response, fieldName) {
     const match = response.match(new RegExp(`${fieldName}:\\s*(.+)$`, 'm'));
@@ -27,6 +27,8 @@ function parseAIResponse(response, originalInput) {
     };
 }
 
+
+
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).end();
 
@@ -35,13 +37,12 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ successful: false, errorMessage: 'Please provide an event description' });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ successful: false, errorMessage: 'AI service not configured' });
     }
 
     try {
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const today = new Date().toISOString().split('T')[0];
         const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -78,8 +79,13 @@ LOCATION:
 
 Now parse the user input above.`;
 
-        const result = await model.generateContent(prompt);
-        const aiText = result.response.text();
+        const result = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 300,
+        });
+
+        const aiText = result.choices[0].message.content;
         const parsed = parseAIResponse(aiText, text);
 
         return res.status(200).json(parsed);
